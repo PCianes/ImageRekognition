@@ -94,6 +94,8 @@ functions:
             - prefix: originals/
   processImage:
     handler: functions/processImage.handler
+    layers:
+      - arn:aws:lambda:us-east-1:367428438232:layer:image-magick:1
     events:
       - stream:
           type: dynamodb
