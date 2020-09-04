@@ -24,6 +24,30 @@ provider:
             - ""
             - - "arn:aws:s3:::"
               - "${self:custom.imagesBucketName}/*"
+    - Effect: Allow
+      Action:
+        - rekognition:DetectFaces
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:DescribeStream
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+        - dynamodb:ListStreams
+      Resource:
+        - Fn::Join:
+            - ""
+            - - "arn:aws:dynamodb:${opt:region, self:provider.region}:*:"
+              - "table/${self:custom.imagesTableName}"
+        - Fn::Join:
+            - ""
+            - - "arn:aws:dynamodb:${opt:region, self:provider.region}:*:"
+              - "table/${self:custom.imagesTableName}/stream/*"
   environment:
     IMAGES_BUCKET_NAME: ${self:custom.imagesBucketName}
     IMAGES_TABLE_NAME: ${self:custom.imagesTableName}
@@ -32,11 +56,26 @@ provider:
 
 resources:
   Resources:
-    ImagesBucket:
-      Type: AWS::S3::Bucket
+    ImagesTable:
+      Type: "AWS::DynamoDB::Table"
       Properties:
-        BucketName: ${self:custom.imagesBucketName}
-        AccessControl: PublicRead
+        TableName: ${self:custom.imagesTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+    #ImagesBucket:
+    #  Type: AWS::S3::Bucket
+    #  Properties:
+    #    BucketName: ${self:custom.imagesBucketName}
+    #    AccessControl: PublicRead
 
 functions:
   downloadImage:
@@ -45,3 +84,20 @@ functions:
       - http:
           path: images
           method: post
+  analyzeImage:
+    handler: functions/analyzeImage.handler
+    events:
+      - s3:
+          bucket: ${self:custom.imagesBucketName}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: originals/
+  processImage:
+    handler: functions/processImage.handler
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - ImagesTable
+              - StreamArn
