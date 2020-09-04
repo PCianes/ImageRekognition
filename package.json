@@ -16,7 +16,9 @@
     "collectCoverage": true
   },
   "dependencies": {
-    "aws-sdk": "^2.131.0",
-    "lodash": "^4.17.4"
+    "aws-sdk": "^2.746.0",
+    "haikunator": "^2.1.2",
+    "lodash": "^4.17.4",
+    "node-fetch": "^2.6.0"
   }
 }

@@ -1,18 +1,47 @@
-# Welcome to serverless. Read the docs
-# https://serverless.com/framework/docs/
-
-# Serverless.yml is the configuration the CLI
-# uses to deploy your code to your provider of choice
-
-# The `service` block is the name of the service
 service: image-rekognition
 
 plugins:
   - serverless-offline
 
-# The `provider` block defines where your service will be deployed
+custom:
+  imagesBucketName: serverless-pipeline-images-rekognition
+  imagesTableName: serverless-pipeline-images-rekognition
+  originalsFolderName: originals
+  processedFolderName: processed
+
 provider:
   name: aws
   runtime: nodejs12.x
-# The `functions` block defines what code to deploy
-# functions:
+  stage: dev
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - S3:GetObject
+        - S3:PutObject
+        - S3:PutObjectAcl
+      Resource:
+        - Fn::Join:
+            - ""
+            - - "arn:aws:s3:::"
+              - "${self:custom.imagesBucketName}/*"
+  environment:
+    IMAGES_BUCKET_NAME: ${self:custom.imagesBucketName}
+    IMAGES_TABLE_NAME: ${self:custom.imagesTableName}
+    ORIGINAL_FOLDER_NAME: ${self:custom.originalsFolderName}
+    PROCESSED_FOLDER_NAME: ${self:custom.processedFolderName}
+
+resources:
+  Resources:
+    ImagesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.imagesBucketName}
+        AccessControl: PublicRead
+
+functions:
+  downloadImage:
+    handler: functions/downloadImage.handler
+    events:
+      - http:
+          path: images
+          method: post
