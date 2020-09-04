@@ -1,6 +1,4 @@
 const _ = require('lodash');
-const fs = require('fs');
-const path = require('path');
 const AWS = require('aws-sdk');
 const gm = require('gm').subClass({ imageMagick: true });
 
