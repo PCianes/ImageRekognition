@@ -103,3 +103,15 @@ functions:
             Fn::GetAtt:
               - ImagesTable
               - StreamArn
+  viewImage:
+    handler: functions/viewImage.handler
+    events:
+      - http:
+          path: images/{id}
+          method: get
+  viewImages:
+    handler: functions/viewImages.handler
+    events:
+      - http:
+          path: images
+          method: get
